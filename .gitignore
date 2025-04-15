@@ -7,3 +7,4 @@ cloud-vault-88f26-b719bfb9e907.json
 frontend/firebase.js
 frontend/firebaseConfig.js
 frontend/src/Firebase/firebase.js
+frontend/src/firebaseConfig.js
