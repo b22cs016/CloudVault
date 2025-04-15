@@ -1,0 +1,9 @@
+venv/
+node_modules/
+.terraform/
+backend/firebase_admin_sdk.json
+backend/_pychache
+cloud-vault-88f26-b719bfb9e907.json
+frontend/firebase.js
+frontend/firebaseConfig.js
+
