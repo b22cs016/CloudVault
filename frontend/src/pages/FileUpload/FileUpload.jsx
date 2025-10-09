@@ -207,6 +207,8 @@ const checkBackendAvailability = async () => {
       setFile(null);
       setUploadProgress(100);
 
+      setUploading(false);
+
       // Reset file input
       const fileInput = document.querySelector('input[type="file"]');
       if (fileInput) fileInput.value = '';
