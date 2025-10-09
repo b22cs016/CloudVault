@@ -26,14 +26,14 @@ const AuthContainer = () => {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        console.log("User is already signed in:", user)
-        setIsAuthenticated(true)
-        // Remove automatic navigation
+        console.log("User is already signed in:", user);
+        setIsAuthenticated(true);
+        navigate("/upload"); // Automatically navigate to the upload page
       } else {
-        setIsAuthenticated(false)
+        setIsAuthenticated(false);
       }
-    })
-    return () => unsubscribe()
+    });
+    return () => unsubscribe();
   }, [navigate])
 
   const handleToggle = () => {

@@ -369,4 +369,26 @@
 
 .popup-close-button:hover {
   background-color: #1976d2;
-} 
+}
+
+.selected-file-info {
+  color: #0d1b2a;           /* Much darker text for strong contrast */
+  font-weight: 600;
+  text-align: center;
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #e3f2fd;
+  border-radius: 4px;
+}
+
+.selected-file-info span {
+  color: #0d47a1;           /* Dark blue for "Selected File:" */
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.selected-file-info p {
+  color: #0d1b2a;           /* Ensure all file info text is dark */
+  font-size: 1rem;
+  margin: 0.5rem 0 0 0;
+}

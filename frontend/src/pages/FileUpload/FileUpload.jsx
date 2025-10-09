@@ -21,63 +21,51 @@ const FileUpload = () => {
   const navigate = useNavigate();
   
   // Backend API URL
-  const API_URL = 'http://localhost:5001/api';
-  
+  const API_URL = import.meta.env.VITE_API_BASE_URL;
+  console.log("Using API_URL:", API_URL); 
   // Check if backend server is available
-  const checkBackendAvailability = async () => {
-    try {
-      const response = await fetch(`${API_URL}/health`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        console.error("Backend server health check failed:", response.status);
-        setServerStatus('offline');
-        return false;
-      }
-      
-      const data = await response.json();
-      console.log("Backend server health check response:", data);
-      
-      // Check if all services are ok
-      const allServicesOk = data.services && 
-        data.services.firebase === 'ok' && 
-        data.services.storage === 'ok' && 
-        data.services.bucket === 'ok' && 
-        data.services.serviceAccount === 'ok';
-      
-      if (!allServicesOk) {
-        console.error("Some backend services are not available:", data.services);
-        setServerStatus('offline');
-        
-        // Set a more specific error message based on which service is down
-        if (data.services.firebase !== 'ok') {
-          setError("Firebase service is not available. Authentication will not work.");
-        } else if (data.services.storage !== 'ok') {
-          setError("Google Cloud Storage service is not available. File operations will not work.");
-        } else if (data.services.bucket !== 'ok') {
-          setError("Storage bucket is not accessible. File operations will not work.");
-        } else if (data.services.serviceAccount !== 'ok') {
-          setError("Service account is not properly configured. Authentication will not work.");
-        } else {
-          setError("Some backend services are not available. Please try again later.");
-        }
-        
-        return false;
-      }
-      
-      setServerStatus('online');
-      return true;
-    } catch (error) {
-      console.error("Backend server is not available:", error);
+const checkBackendAvailability = async () => {
+  console.log("Checking backend health at:", API_URL + "/health"); // ✅ log URL
+
+  try {
+    const response = await fetch(`${API_URL}/health`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    console.log("Health fetch response:", response); // ✅ log raw response
+
+    if (!response.ok) {
+      console.error("Backend server health check failed:", response.status);
       setServerStatus('offline');
-      setError("Backend server is not available. Please make sure the server is running.");
       return false;
     }
-  };
+
+    const data = await response.json();
+    console.log("Health check data:", data); // ✅ log JSON data
+
+    const allServicesOk =
+      data.services &&
+      data.services.firebase === 'ok' &&
+      data.services.storage === 'ok' &&
+      data.services.bucket === 'ok' &&
+      data.services.serviceAccount === 'ok';
+
+    if (!allServicesOk) {
+      console.error("Some backend services are not available:", data.services);
+      setServerStatus('offline');
+      return false;
+    }
+
+    setServerStatus('online');
+    return true;
+  } catch (error) {
+    console.error("Error connecting to backend:", error); // ✅ log errors
+    setServerStatus('offline');
+    return false;
+  }
+};
+
   
   // Check server status on component mount
   useEffect(() => {
@@ -176,20 +164,18 @@ const FileUpload = () => {
       return;
     }
 
+    setUploading(true);
+    setError('');
+    setSuccess('');
+    setUploadProgress(0);
+
     try {
-      setUploading(true);
-      setError('');
-      setSuccess('');
-      setUploadProgress(0);
       const user = auth.currentUser;
-      
       if (!user) {
-        console.log("No authenticated user found");
         navigate('/auth');
         return;
       }
 
-      // Check if backend server is available
       const isServerAvailable = await checkBackendAvailability();
       if (!isServerAvailable) {
         setError("Backend server is not available. Please make sure the server is running.");
@@ -197,22 +183,12 @@ const FileUpload = () => {
         return;
       }
 
-      console.log("Starting upload for user:", user.uid);
-      console.log("File details:", {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      });
-
-      // Get the user's ID token
       const idToken = await user.getIdToken();
-      
-      // Create form data
       const formData = new FormData();
       formData.append('file', file);
       formData.append('fileName', file.name);
-      
-      // Use fetch API instead of XMLHttpRequest for simpler code
+
+      // Upload file to backend
       const response = await fetch(`${API_URL}/upload`, {
         method: 'POST',
         headers: {
@@ -220,48 +196,29 @@ const FileUpload = () => {
         },
         body: formData
       });
-      
+
       if (!response.ok) {
         throw new Error(`Upload failed with status: ${response.status}`);
       }
-      
+
       const responseData = await response.json();
-      console.log("File uploaded successfully:", responseData);
-      
-      // Add file metadata to Firestore
-      const docRef = await addDoc(collection(db, 'files'), {
-        name: responseData.file.name,
-        uniqueName: responseData.file.uniqueName,
-        type: responseData.file.type,
-        size: responseData.file.size,
-        userId: user.uid,
-        downloadURL: responseData.file.downloadURL,
-        path: responseData.file.path,
-        createdAt: responseData.file.createdAt,
-        lastAccessed: responseData.file.lastAccessed
-      });
-      
-      console.log("File metadata added to Firestore with ID:", docRef.id);
-      
-      // Add the new file to the files list
-      setFiles(prevFiles => [...prevFiles, {
-        id: docRef.id,
-        ...responseData.file
-      }]);
 
       setSuccess('File uploaded successfully!');
       setFile(null);
       setUploadProgress(100);
-      
+
       // Reset file input
       const fileInput = document.querySelector('input[type="file"]');
       if (fileInput) fileInput.value = '';
-      
-      // Set uploading to false after a short delay to ensure UI updates
+
+      setShowFilesSection(true);
+
+      // Automatically refresh the page and navigate to the upload section
       setTimeout(() => {
-        setUploading(false);
-      }, 500);
-      
+        navigate('/upload'); // Navigate directly to the upload page
+        window.location.reload(); // Refresh the page
+      }, 2000);
+
     } catch (error) {
       console.error('Error in handleUpload:', error);
       setError(`Error uploading file: ${error.message}`);
@@ -358,6 +315,9 @@ const FileUpload = () => {
     // Reset file input
     const fileInput = document.querySelector('input[type="file"]');
     if (fileInput) fileInput.value = '';
+
+    // Automatically refresh the page
+    window.location.reload();
   };
   
   const formatFileSize = (bytes) => {
@@ -475,8 +435,8 @@ const FileUpload = () => {
         {success && <p className="success-message">{success}</p>}
 
         {file && (
-          <div className="file-info">
-            <h3>Selected File:</h3>
+          <div className="selected-file-info">
+            <span>Selected File:</span>
             <p>Name: {file.name}</p>
             <p>Size: {formatFileSize(file.size)}</p>
             <p>Type: {file.type || 'Unknown'}</p>
@@ -536,4 +496,4 @@ const FileUpload = () => {
   );
 };
 
-export default FileUpload; 
+export default FileUpload;

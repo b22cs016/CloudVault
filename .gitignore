@@ -8,3 +8,4 @@ frontend/firebase.js
 frontend/firebaseConfig.js
 frontend/src/Firebase/firebase.js
 frontend/src/firebaseConfig.js
+backend/service-account-key.json

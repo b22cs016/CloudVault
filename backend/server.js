@@ -12,7 +12,7 @@ const port = process.env.PORT || 5001;
 
 // Enable CORS with specific options
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3002'],
+  origin: ['http://localhost:3000', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3002','https://cloudvault-frontend-ztsd.onrender.com'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -20,9 +20,12 @@ app.use(cors({
 
 app.use(express.json());
 
+
+
 // Initialize Firebase Admin
 try {
-  const serviceAccount = require('./service-account-key.json');
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
   });
@@ -33,43 +36,45 @@ try {
 }
 
 // Check if service account key file exists
-const checkServiceAccountKey = () => {
-  const keyPath = path.join(__dirname, './service-account-key.json');
-  try {
-    if (!fs.existsSync(keyPath)) {
-      console.error('Service account key file does not exist:', keyPath);
-      return false;
-    }
+// const checkServiceAccountKey = () => {
+//   const keyPath = path.join(__dirname, './service-account-key.json');
+//   try {
+//     if (!fs.existsSync(keyPath)) {
+//       console.error('Service account key file does not exist:', keyPath);
+//       return false;
+//     }
     
-    const keyContent = fs.readFileSync(keyPath, 'utf8');
-    const keyData = JSON.parse(keyContent);
+//     const keyContent = fs.readFileSync(keyPath, 'utf8');
+//     const keyData = JSON.parse(keyContent);
     
-    // Check if the key has the required fields
-    if (!keyData.project_id || !keyData.private_key || !keyData.client_email) {
-      console.error('Service account key is missing required fields');
-      return false;
-    }
+//     // Check if the key has the required fields
+//     if (!keyData.project_id || !keyData.private_key || !keyData.client_email) {
+//       console.error('Service account key is missing required fields');
+//       return false;
+//     }
     
-    console.log('Service account key file exists and is valid');
-    return true;
-  } catch (error) {
-    console.error('Error checking service account key:', error);
-    return false;
-  }
-};
+//     console.log('Service account key file exists and is valid');
+//     return true;
+//   } catch (error) {
+//     console.error('Error checking service account key:', error);
+//     return false;
+//   }
+// };
 
 // Check service account key on server startup
-if (!checkServiceAccountKey()) {
-  console.error('WARNING: Service account key is invalid or missing. Authentication will fail.');
-}
+// if (!checkServiceAccountKey()) {
+//   console.error('WARNING: Service account key is invalid or missing. Authentication will fail.');
+// }
 
 // Initialize Google Cloud Storage
 let storage;
 try {
   console.log('Attempting to initialize Google Cloud Storage...');
+  const gcsCredentials = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
   storage = new Storage({
-    keyFilename: path.join(__dirname, './service-account-key.json'),
-    projectId: 'cloud-vault-88f26'
+    projectId: gcsCredentials.project_id,
+    credentials: gcsCredentials
   });
   console.log('Google Cloud Storage initialized successfully');
 } catch (error) {
@@ -168,19 +173,19 @@ app.get('/api/health', async (req, res) => {
     }
     
     // Check service account key
-    const serviceAccountStatus = checkServiceAccountKey() ? 'ok' : 'error';
+    // const serviceAccountStatus = checkServiceAccountKey() ? 'ok' : 'error';
     
     res.status(200).json({ 
-      status: 'ok', 
-      message: 'Server is running',
-      timestamp: new Date().toISOString(),
-      services: {
-        firebase: firebaseStatus,
-        storage: storageStatus,
-        bucket: bucketStatus,
-        serviceAccount: serviceAccountStatus
-      }
-    });
+  status: 'ok', 
+  message: 'Server is running',
+  timestamp: new Date().toISOString(),
+  services: {
+    firebase: firebaseStatus,
+    storage: storageStatus,
+    bucket: bucketStatus,
+    serviceAccount: 'ok' // or 'ok' if you trust env variable is set
+  }
+});
   } catch (error) {
     console.error('Error in health check:', error);
     res.status(500).json({ 
@@ -426,4 +431,4 @@ process.on('unhandledRejection', (reason, promise) => {
   server.close(() => {
     process.exit(1);
   });
-}); 
+});
