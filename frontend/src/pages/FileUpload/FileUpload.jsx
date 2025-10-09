@@ -321,8 +321,10 @@ setTimeout(() => {
     const fileInput = document.querySelector('input[type="file"]');
     if (fileInput) fileInput.value = '';
 
-    // Automatically refresh the page
-    window.location.reload();
+    // ✅ Just reset the UI state instead of reloading
+if (typeof loadUserFiles === "function" && auth.currentUser?.uid) {
+  loadUserFiles(auth.currentUser.uid);
+}
   };
   
   const formatFileSize = (bytes) => {
