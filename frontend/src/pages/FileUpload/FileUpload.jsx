@@ -214,10 +214,15 @@ const checkBackendAvailability = async () => {
       setShowFilesSection(true);
 
       // Automatically refresh the page and navigate to the upload section
-      setTimeout(() => {
-        navigate('/upload'); // Navigate directly to the upload page
-        window.location.reload(); // Refresh the page
-      }, 2000);
+      // ✅ Instead of reload, just refresh the file list
+if (typeof loadUserFiles === "function" && user?.uid) {
+  await loadUserFiles(user.uid);
+}
+
+// ✅ Optional: small delay before showing new files
+setTimeout(() => {
+  navigate('/upload'); // Navigate to upload page (no reload)
+}, 1000);
 
     } catch (error) {
       console.error('Error in handleUpload:', error);
